@@ -1,7 +1,10 @@
 // with macros 
+import uvm_pkg::*;
+	`include "uvm_macros.svh"
+class write_xtn extends uvm_sequence_item;
+	typedef enum bit {bad_xtn,good_xtn}addr_t;
 
-class write_xtn extends uvm_sequence_item;	
-	`uvm_object_utils(write_xtn)begin 
+	`uvm_object_utils_begin(write_xtn)
 		`uvm_field_int(data,UVM_ALL_ON)
 		`uvm_field_int(address,UVM_ALL_ON)
 		`uvm_field_int(write,UVM_ALL_ON)
@@ -16,7 +19,7 @@ class write_xtn extends uvm_sequence_item;
 			return "write_xtn";
 		endfunction*/
 	
-	typedef enum bit {bad_xtn,good_xtn}addr_t;
+	
 	rand bit [63:0]data;
 	rand bit [11:0]address;
 	rand bit write;
