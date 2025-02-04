@@ -1,0 +1,172 @@
+/*   toplogy of 1 src agent(active) and 1 dst agent (passive)
+package pkg;
+	import uvm_pkg::*;
+	`include "uvm_macros.svh"
+endpackage
+
+// top 
+ 
+module top;
+	import uvm_pkg::*;
+	bit clk;
+	always 
+	#10 clk=~clk;
+	run_test("test");
+endmodule
+
+// trans
+import uvm_pkg::*;
+ class trans extends uvm_sequence_item;
+	`uvm_object_utils(trans)
+	function new(string name="trans");
+		super.new(name);
+	endfunction 
+endclass
+
+// wr_con
+class wr_config extends uvm_object;
+	`uvm_object_utils(wr_config);
+	function new(string name="wr_config");
+		super.new(name);
+	endfunction
+	uvm_active_passive_enum is_active=UVM_ACTIVE;
+endclass
+
+//rd_con 
+class rd_config extends uvm_object;
+	`uvm_object_utils(rd_config);
+	function new(string name="rd_config");
+		super.new(name);
+	endfunction
+	uvm_active_passive_enum is_active=UVM_ACTIVE;
+endclass
+
+// env config 
+class env_cfg extends uvm_object;
+	`uvm_object_utils(env_cfg)
+	function new(string name="env_cfg");
+		super.new(name);
+	endfunction 
+	int has_src_agent=1;
+	int has_dst_agent=1;
+	int no_of_src=1;
+	int no_of_dst=1;
+	wr_config w_cfg;
+	rd_config r_cfg;
+endclass
+// wr_seqr 
+class wr_seqr extends uvm_sequencer #(trans);
+	`uvm_component_utils(wr_seqr)
+	function new(string name="wr_seqr",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+endclass
+// wr drv
+class wr_drv extends uvm_driver#(trans);
+	`uvm_component_utils(wr_drv)
+	function new(string name="wr_drv",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+endclass
+// wr mon 
+class wr_mon extends uvm_monitor;
+	`uvm_component_utils(wr_mon)
+	function new(string name="wr_mon",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+endclass
+// wr agt
+class wr_agt extends uvm_agent;
+	wr_mon monh;
+	wr_drv drvh;
+	wr_seqr seqrh;
+	wr_config cfg;
+	function new(string name="wr_agt",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+	function void build_phase(uvm_phase phase);
+		super.build_phase(phase);
+	monh=wr_mon::type_id::create("monh",this);
+	if(!uvm_config_db #(wr_config)::get(this,"","wr_config",cfg))
+		`uvm_fatal("err","not set")
+		if(cfg.is_active==UVM_ACTIVE)
+			drvh=wr_drv::type_id::create("drvh",this);
+			seqrh=wr_seqr::type_id::create("seqrh",this);
+	endfunction
+endclass
+// rd_mon 
+
+class rd_mon extends uvm_monitor;
+	`uvm_component_utils(rd_mon)
+	function new(string name="rd_mon",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+endclass
+// wr agt
+class rd_agt extends uvm_agent;
+	rd_mon monh;
+	rd_config cfg;
+	function new(string name="rd_agt",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+	function void build_phase(uvm_phase phase);
+		super.build_phase(phase);
+	monh=rd_mon::type_id::create("monh",this);
+	if(!uvm_config_db #(rd_config)::get(this,"","rd_config",cfg))
+		`uvm_fatal("err","not set")
+		/*if(cfg.is_active==UVM_ACTIVE)
+			drvh=wr_drv::type_id::create("drvh",this);
+			seqrh=wr_seqr::type_id::create("seqrh",this);*/
+	endfunction
+endclass
+// env
+class env extends uvm_env;
+	wr_agt w_agth;
+	rd_agt r_agth;
+	env_cfg cfg;
+	`uvm_component_utils(env)
+	function new(string name="env",uvm_component parent);
+		super.new(name,parent);
+	endfunction
+	function void build_phase(uvm_phase phase);
+		super.build_phase(phase);
+		if(cfg.has_src_agent)
+			w_agth=wr_agt::type_id::create("w_agth",this);
+			uvm_config_db #(wr_config)::set(this,"w_agth*","wr_config",cfg.w_cfg);
+		if(cfg.has_dst_agent)
+			r_agth=wr_agt::type_id::create("r_agth",this);
+			uvm_config_db #(rd_config)::set(this,"r_agth*","rd_config",cfg.r_cfg);
+			
+	endfunction
+endclass
+
+// test 
+class test extends uvm_test;
+	`uvm_component_utils(test)
+	env envh;
+	function new(string name="test",uvm_component parent);
+		super.new(name,parent);
+	endfunction 
+	wr_config w_cfg;
+	rd_config r_cfg;
+	env_cfg cfg;
+	function void build_phase(uvm_phase phase);
+		super.build_phase(phase);
+		cfg=env_cfg::type_id::create("cfg",this);
+		if(cfg.has_src_agent)
+			begin 
+			w_cfg=wr_config::type_id::create("w_cfg",this);
+			cfg.w_cfg=w_cfg;
+			end 
+		if(cfg.has_dst_agent)
+			begin 
+			r_cfg=rd_config::type_id::create("r_cfg",this);
+			cfg.r_cfg=r_cfg;
+			end
+		uvm_config_db#(env_cfg)::set(this,"*","env_cfg",cfg);
+endfunction
+
+function void end_of_elaboration_phase(uvm_phase phase);
+	uvm_top.print_topology;
+	endfunction
+endclass
